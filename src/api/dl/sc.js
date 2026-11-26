@@ -80,12 +80,6 @@ module.exports = function (app) {
           error: 'Solo HTTPS'
         })
 
-      if (!['soundcloud.com', 'www.soundcloud.com'].includes(parsed.hostname))
-        return res.status(403).json({
-          status: false,
-          error: 'Dominio no permitido'
-        })
-
       return res.status(403).json({
         status: false,
         error: 'Utiliza una fuente de audio descargable y autorizada para convertir.'
