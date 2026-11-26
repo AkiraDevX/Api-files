@@ -121,7 +121,7 @@ module.exports = function (app) {
   // ============================================================
   // 🎫 Crear enlace
   // ============================================================
-  app.get('/download/yt', (req, res) => {
+  app.get('/file', (req, res) => {
     try {
       const {
         url,
