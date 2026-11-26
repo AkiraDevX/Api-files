@@ -45,14 +45,14 @@ module.exports = function (app) {
     return name
   }
 
-  // 🔗 Link de descarga con el nuevo formato
+  // 🔗 Link de descarga con ?token=
   function getPublicUrl(req, id) {
-    return `${req.protocol}://${req.get('host')}/download/stream?id=${id}`
+    return `${req.protocol}://${req.get('host')}/download/stream?token=${id}`
   }
 
-  // ℹ️ Link de info con el nuevo formato
+  // ℹ️ Link de info con ?token=
   function getInfoUrl(req, id) {
-    return `${req.protocol}://${req.get('host')}/download/info?id=${id}`
+    return `${req.protocol}://${req.get('host')}/download/info?token=${id}`
   }
 
   function removeLink(id) {
@@ -74,7 +74,7 @@ module.exports = function (app) {
     links.delete(id)
   }
 
-  // 🗑️ Borra el archivo de caché por id (aunque el link ya no exista)
+  // 🗑️ Borra el archivo de caché por token (aunque el link ya no exista)
   function deleteCacheFile(id) {
     const cachePath = path.join(FILES_DIR, `${id}.cache`)
     if (fs.existsSync(cachePath)) {
@@ -149,7 +149,6 @@ module.exports = function (app) {
       }
 
       const isDirect = direct === 'true'
-      // Si es direct, el cache no tiene sentido (no se descarga nada)
       const isCache = !isDirect && cache === 'true'
 
       const id = crypto.randomBytes(16).toString('hex')
@@ -181,7 +180,7 @@ module.exports = function (app) {
       res.json({
         status: true,
         data: {
-          id,
+          token: id,
           dl,
           info: getInfoUrl(req, id),
           mode: isDirect ? 'direct-redirect' : 'live-tunnel',
@@ -206,7 +205,7 @@ module.exports = function (app) {
   // ℹ️ Info del enlace
   // ============================================================
   app.get('/download/info', (req, res) => {
-    const item = links.get(req.query.id)
+    const item = links.get(req.query.token)
 
     if (!item || Date.now() > item.expiresAt) {
       return res.status(404).json({
@@ -218,7 +217,7 @@ module.exports = function (app) {
     res.json({
       status: true,
       data: {
-        id: item.id,
+        token: item.id,
         status: item.status,
         filename: item.filename,
         mime: item.mime,
@@ -236,12 +235,12 @@ module.exports = function (app) {
   // 📥 Stream / Redirect
   // ============================================================
   app.get('/download/stream', async (req, res) => {
-    const id = req.query.id
+    const id = req.query.token
 
     if (!id) {
       return res.status(400).json({
         status: false,
-        message: 'Falta el parámetro ?id='
+        message: 'Falta el parámetro ?token='
       })
     }
 
@@ -254,8 +253,7 @@ module.exports = function (app) {
       })
     }
 
-    // 🎯 Modo direct: redirige a la URL original (útil cuando el
-    // origen da 403 al proxy pero sí permite navegador directo)
+    // 🎯 Modo direct: redirige a la URL original
     if (item.direct) {
       item.status = 'redirect'
       return res.redirect(302, item.url)
@@ -451,45 +449,43 @@ module.exports = function (app) {
   })
 
   // ============================================================
-  // 🗑️ Eliminar link + archivo de caché por id
+  // 🗑️ Eliminar link + archivo de caché por token
   // ============================================================
   app.delete('/download/stream', (req, res) => {
-    const id = req.query.id || (req.body && req.body.id)
+    const id = req.query.token || (req.body && req.body.token)
 
     if (!id) {
       return res.status(400).json({
         status: false,
-        message: 'Falta el parámetro ?id='
+        message: 'Falta el parámetro ?token='
       })
     }
 
     const item = links.get(id)
 
-    // Si el link está activo, lo elimina (también borra el cache)
     if (item) {
       removeLink(id)
       return res.json({
         status: true,
         message: 'Link y archivo eliminados correctamente',
-        data: { id }
+        data: { token: id }
       })
     }
 
-    // Si el link ya no existe, al menos intenta borrar el archivo huérfano
     const deleted = deleteCacheFile(id)
 
     if (deleted) {
       return res.json({
         status: true,
         message: 'Archivo de caché eliminado correctamente',
-        data: { id }
+        data: { token: id }
       })
     }
 
     return res.status(404).json({
       status: false,
       message: 'Link o archivo no encontrado',
-      data: { id }
+      data: { token: id }
     })
   })
 
@@ -497,15 +493,15 @@ module.exports = function (app) {
   // 🔁 Retro-compatibilidad con /f/:id (opcional)
   // ============================================================
   app.get('/f/:id', (req, res) => {
-    res.redirect(301, `/download/stream?id=${req.params.id}`)
+    res.redirect(301, `/download/stream?token=${req.params.id}`)
   })
 
   app.get('/f/:id/info', (req, res) => {
-    res.redirect(301, `/download/info?id=${req.params.id}`)
+    res.redirect(301, `/download/info?token=${req.params.id}`)
   })
 
   app.delete('/f/:id', (req, res) => {
-    res.redirect(307, `/download/stream?id=${req.params.id}`)
+    res.redirect(307, `/download/stream?token=${req.params.id}`)
   })
 
 }
