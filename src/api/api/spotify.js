@@ -43,7 +43,7 @@ module.exports = function (app) {
   }
 
   // ─── Servir archivo ───────────────────────────────────────
-  app.get('/files/d/:token', (req, res) => {
+  app.get('/files/spotify/:token', (req, res) => {
     const { token } = req.params
     const { exp } = req.query
 
@@ -63,14 +63,14 @@ module.exports = function (app) {
   })
 
   // ─── Upload desde URL ─────────────────────────────────────
-  app.get('/upload/files', async (req, res) => {
+  app.get('/files/spotify', async (req, res) => {
     try {
       const { url, expire = 60 } = req.query
       if (!url) return res.json({ status: false, message: 'Falta parametro ?url=' })
 
       const result = await uploadFromUrl(url, parseInt(expire))
   
-      const dlUrl = `${req.protocol}://${req.get('host')}/files/d/${result.token}?exp=${result.exp}&sig=${result.sig}&sec=${result.sec}&iv=${result.iv}`
+      const dlUrl = `${req.protocol}://${req.get('host')}/files/spotify/${result.token}?exp=${result.exp}&sig=${result.sig}&sec=${result.sec}&iv=${result.iv}`
 
       res.json({
         status: true,
