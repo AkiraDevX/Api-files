@@ -8,11 +8,10 @@ module.exports = function (app) {
   const execFileAsync = promisify(execFile)
   const FILES = path.join(__dirname, 'files')
   const TMP = path.join(FILES, 'tmp')
+  const MAX_SIZE = 100 * 1024 * 1024
 
   fs.mkdirSync(FILES, { recursive: true })
   fs.mkdirSync(TMP, { recursive: true })
-
-  const MAX_SIZE = 100 * 1024 * 1024
 
   async function downloadFile(url, dest) {
     const response = await fetch(url, {
@@ -63,26 +62,14 @@ module.exports = function (app) {
           error: 'URL requerida'
         })
 
-      let parsed
+      await downloadFile(url, input)
+      await convert(input, output)
 
-      try {
-        parsed = new URL(url)
-      } catch {
-        return res.status(400).json({
-          status: false,
-          error: 'URL inválida'
-        })
-      }
-
-      if (parsed.protocol !== 'https:')
-        return res.status(400).json({
-          status: false,
-          error: 'Solo HTTPS'
-        })
-
-      return res.status(403).json({
-        status: false,
-        error: 'Utiliza una fuente de audio descargable y autorizada para convertir.'
+      return res.json({
+        status: true,
+        title: `${id}.mp3`,
+        size: fs.statSync(output).size,
+        download: `${req.protocol}://${req.get('host')}/files/sc/${id}.mp3`
       })
     } catch (e) {
       return res.status(500).json({
@@ -97,7 +84,7 @@ module.exports = function (app) {
     }
   })
 
-  app.get('/file/sc/:filename', (req, res) => {
+  app.get('/files/sc/:filename', (req, res) => {
     const filename = path.basename(req.params.filename)
     const file = path.join(FILES, filename)
 
