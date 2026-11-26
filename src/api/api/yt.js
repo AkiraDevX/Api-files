@@ -157,7 +157,7 @@ module.exports = function (app) {
   // ═══════════════════════════════════════════════════
   //  CREAR LINK
   // ═══════════════════════════════════════════════════
-  app.get('/file/yt', async (req, res) => {
+  app.get('/file', async (req, res) => {
     try {
       const { url, expire, cache = 'false', format: forcedFormat } = req.query
 
@@ -227,7 +227,6 @@ module.exports = function (app) {
         status: true,
         data: {
           id,
-          url: publicLink,
           dl: publicLink,
           info: `${req.protocol}://${req.get('host')}/f/${id}/info`,
           delete: `${req.protocol}://${req.get('host')}/delete/${id}?token=${deleteToken}`,
